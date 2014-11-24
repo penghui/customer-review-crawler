@@ -5,10 +5,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.io.FileUtils;
 
@@ -21,7 +18,7 @@ import org.apache.commons.io.FileUtils;
  */
 public class ItemList {
 	public ItemList() {
-		itemIDs = new HashSet<String>();
+		itemIDs = new LinkedHashSet<String>();
 	}
 
 	/**
@@ -30,7 +27,7 @@ public class ItemList {
 	 * @throws FileNotFoundException
 	 */
 	public ItemList(String file) throws FileNotFoundException {
-		itemIDs = new HashSet<String>();
+		itemIDs = new LinkedHashSet<String>();
 		Scanner s = new Scanner(new File(file));
 		while (s.hasNext()) {
 			itemIDs.add(s.next());
@@ -100,9 +97,9 @@ public class ItemList {
 		return true;
 	}
 
-	public Set<String> returnIDsAsSet() {
+	public LinkedHashSet<String> returnIDsAsSet() {
 		return itemIDs;
 	}
 
-	private Set<String> itemIDs;
+	private LinkedHashSet<String> itemIDs;
 }
