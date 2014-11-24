@@ -42,8 +42,8 @@ public class ItemList {
 		return itemIDs.toString();
 	}
 
-	public void addItem(String newItem) {
-		itemIDs.add(newItem);
+	public boolean addItem(String newItem) {
+		return itemIDs.add(newItem);
 	}
 
 	/**

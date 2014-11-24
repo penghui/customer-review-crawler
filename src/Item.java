@@ -78,7 +78,9 @@ public class Item {
 						+ "/?showViewpoints=0&sortBy=byRankDescending&pageNumber="
 						+ p;
 				org.jsoup.nodes.Document reviewpage = null;
-				reviewpage = Jsoup.connect(url).timeout(10*1000).get();
+				System.out.println("Getting page "+ p +"/"+maxpage);
+				reviewpage = readContent(url, 3);
+
 				if (reviewpage.select("table[id=productReviews]").isEmpty()) {
 					System.out.println(itemID + " " + "no reivew");
 				} else {
@@ -97,9 +99,28 @@ public class Item {
 			}
 
 		} catch (Exception e) {
+			e.printStackTrace();
 			System.out.println(itemID + " " + "Exception" + " " + e.getClass());
 		}
 
+	}
+
+	private org.jsoup.nodes.Document readContent(String url, int retryTimes) throws Exception {
+		try {
+			System.out.println("Getting url:" + url);
+			return Jsoup.connect(url).timeout(10 * 1000).get();
+		} catch(Exception e) {
+			if(retryTimes>0) {
+				try {
+					System.out.println("sleep 3000 milli-seconds, retry: " + retryTimes);
+					Thread.sleep(3000);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+				return readContent(url, --retryTimes);
+			}
+			else throw e;
+		}
 	}
 
 	/**

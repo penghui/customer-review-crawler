@@ -47,7 +47,7 @@ public class GetReviewerInfo {
 		String Total_helpful_votes = "";
 		String Total_reviews = "1";
 		String Location = "";
-		List<String> Recent_rating = new ArrayList<>();
+		List<String> Recent_rating = new ArrayList<String>();
 		try {
 			doc = Jsoup.connect(url).get();
 

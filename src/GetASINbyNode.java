@@ -1,9 +1,12 @@
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
@@ -41,17 +44,85 @@ public class GetASINbyNode implements GetID{
 	
 	public void getIDList() throws IOException{
 		for (int i = from; i <= to; i++) {
-			String thepage = readWebPage("http://www.amazon.com/gp/aw/s/ref=is_pg_2_1?n="+nodeid+"&p="+i+"&p_72=1248882011&s=salesrank");
-			//System.out.println(thepage);
+//			String url = "http://www.amazon.com/gp/aw/s/ref=is_pg_2_1?n="+nodeid+"&p="+i+"&p_72=1248882011&s=salesrank";
+			String url = "http://www.amazon.com/b/ref=dp_brw_link?ie=UTF8&node=" + nodeid + "&page=" + i;
+			String thepage = readWebPage(url);
+			System.out.println(url);
+			System.out.println(thepage);
 			DateTime dt = new DateTime();
 			System.out.println(dt+ "Page "+i);
-			String patternString = "(<a href=\"/gp/aw/d/)(\\S{10})(/ref=mp_s_a)";
+//			String patternString = "(<a href=\"/gp/aw/d/)(\\S{10})(/ref=mp_s_a)";
+			String patternString = "(/dp/)([0-9A-Z]+)";
 			Pattern pattern = Pattern.compile(patternString);
 			Matcher matcher = pattern.matcher(thepage);
 			while (matcher.find()) {
-				items.addItem(matcher.group(2));
+				boolean success = items.addItem(matcher.group(2));
+//				System.out.println("Item " + matcher.group(2) + " added: " + (String.valueOf(success)));
+			}
+			try {
+				Thread.sleep(3000);
+			} catch (InterruptedException e) {
+				//ignore
 			}
 		}
+	}
+
+	public void getIDList2() throws IOException {
+		boolean end = false;
+		String url = "";
+		for (int i = from; i <= to; i++) {
+			if(url.length() == 0) url = "http://www.amazon.com/b/ref=dp_brw_link?ie=UTF8&node=" + nodeid + "&page=" + i;
+			String pageContent = null;
+			pageContent = readContent(url, 3);
+			addIdsWithPageContent(pageContent);
+			ArrayList nextPageUrlAndPageNumber = getNextPageUrlAndPageNumber(pageContent);
+			int nextPageNumber = (Integer)nextPageUrlAndPageNumber.get(1);
+			System.out.println("next page: "+nextPageNumber+" next i:"+(i+1));
+			if(nextPageNumber != (i+1)) break;
+			url = (String)nextPageUrlAndPageNumber.get(0);
+			if(!url.startsWith("http://www.amazon.com")) url = "http://www.amazon.com" + url;
+		}
+	}
+	private void addIdsWithPageContent(String pageContent) {
+		String patternString = "(/dp/)([0-9A-Z]+)";
+		Pattern pattern = Pattern.compile(patternString);
+		Matcher matcher = pattern.matcher(pageContent);
+		while (matcher.find()) {
+			boolean success = items.addItem(matcher.group(2));
+			if(success) System.out.println("Item " + matcher.group(2) + " added: " + (String.valueOf(success)));
+		}
+	}
+	private String readContent(String url, int retryTimes) throws IOException {
+			try {
+				System.out.println("Getting url:" + url);
+				return readWebPage(url);
+			} catch(IOException e) {
+				if(retryTimes>0) {
+					try {
+						System.out.println("sleep 3000 milli-seconds, retry: " + retryTimes);
+						Thread.sleep(3000);
+					} catch (InterruptedException e1) {
+						e1.printStackTrace();
+					}
+					return readContent(url, --retryTimes);
+				}
+				else throw e;
+			}
+		}
+
+	private ArrayList getNextPageUrlAndPageNumber(String pageContent) {
+		ArrayList result = new ArrayList();
+		String patternString = "<a [^>]* id=\"pagnNextLink\"[^>]*href=\"([^\"]+page=([0-9]+)[^\"]+)\"[^>]*[>]";
+		Pattern pattern = Pattern.compile(patternString);
+		Matcher matcher = pattern.matcher(pageContent);
+		if(matcher.find()) {
+			result.add(matcher.group(1));
+			result.add(Integer.valueOf(matcher.group(2)));
+		} else {
+			result.add("");
+			result.add(-1);
+		}
+		return result;
 	}
 	/**
 	 * Write all ASIN in the node to a csv file
@@ -71,7 +142,7 @@ public class GetASINbyNode implements GetID{
 	public String readWebPage(String weburl) throws IOException{
 		HttpClient httpclient = new DefaultHttpClient();
 		//HttpProtocolParams.setUserAgent(httpclient.getParams(), "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)");
-		HttpGet httpget = new HttpGet(weburl); 
+		HttpGet httpget = new HttpGet(weburl);
 		ResponseHandler<String> responseHandler = new BasicResponseHandler();    
 		String responseBody = httpclient.execute(httpget, responseHandler);
 		// responseBody now contains the contents of the page
